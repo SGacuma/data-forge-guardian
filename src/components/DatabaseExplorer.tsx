@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { mockConnections, mockSchemas, mockTableData } from "@/data/mockData";
+import { mockConnections, connectionSchemas, mockTableData } from "@/data/mockData";
 import { DatabaseConnection, DatabaseTable, DatabaseSchema } from "@/types/database";
 import { 
   ChevronDown, 
@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import {
   Select,
   SelectContent,
@@ -32,11 +32,11 @@ const DatabaseExplorer = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedConnection, setSelectedConnection] = useState(mockConnections.length > 0 ? mockConnections[0].id : "");
-  const [expandedSchemas, setExpandedSchemas] = useState<Record<string, boolean>>({ "schema1": true });
+  const [expandedSchemas, setExpandedSchemas] = useState<Record<string, boolean>>({ "schema1_prod": true });
   const [expandedTables, setExpandedTables] = useState<Record<string, boolean>>({});
   const [selectedTable, setSelectedTable] = useState<DatabaseTable | null>(null);
   const [availableConnections, setAvailableConnections] = useState<DatabaseConnection[]>(mockConnections);
-  const [schemas, setSchemas] = useState<DatabaseSchema[]>(mockSchemas);
+  const [schemas, setSchemas] = useState<DatabaseSchema[]>(connectionSchemas[selectedConnection] || []);
   const [isConnecting, setIsConnecting] = useState(false);
 
   // Get the current selected connection object
@@ -51,13 +51,14 @@ const DatabaseExplorer = () => {
     // In a real app, this is where you would fetch schemas for the selected connection
     // For demo purposes, we'll use mock data based on connection status
     if (currentConnection?.status === "connected") {
-      setSchemas(mockSchemas);
+      // Get the schemas for the selected connection
+      setSchemas(connectionSchemas[selectedConnection] || []);
       toast({
         title: "Connected to database",
         description: `Showing tables from ${currentConnection.name}`,
       });
     } else {
-      // If not connected, show empty schemas or placeholder
+      // If not connected, show empty schemas
       setSchemas([]);
     }
   }, [selectedConnection, currentConnection?.status]);
@@ -158,7 +159,7 @@ const DatabaseExplorer = () => {
         {/* Connection status and connect button */}
         {currentConnection && currentConnection.status !== "connected" && (
           <div className="p-3 border-b bg-slate-50">
-            <Alert variant="warning" className="p-3 mb-2 bg-amber-50">
+            <Alert className="p-3 mb-2 bg-amber-50">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle className="text-sm ml-2">Not connected</AlertTitle>
               <AlertDescription className="text-xs ml-6">
