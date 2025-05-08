@@ -44,7 +44,10 @@ const TableViewer = ({ table, data }: TableViewerProps) => {
   
   // Handle potentially undefined or null data
   const safeData = data || { columns: [], rows: [], rowCount: 0, executionTime: 0 };
-  const totalPages = Math.ceil((safeData.rows?.length || 0) / rowsPerPage);
+  
+  // Ensure rows is always an array, even if data is undefined or null
+  const rows = safeData.rows || [];
+  const totalPages = Math.ceil(rows.length / rowsPerPage);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -59,13 +62,13 @@ const TableViewer = ({ table, data }: TableViewerProps) => {
     }
   };
 
-  const filteredRows = safeData.rows?.filter((row) => {
+  const filteredRows = rows.filter((row) => {
     if (!searchValue) return true;
     return Object.values(row).some(
       (value) =>
         value && value.toString().toLowerCase().includes(searchValue.toLowerCase())
     );
-  }) || [];
+  });
 
   const paginatedRows = filteredRows.slice(
     (currentPage - 1) * rowsPerPage,
@@ -121,8 +124,8 @@ const TableViewer = ({ table, data }: TableViewerProps) => {
             <Table className="relative">
               <TableHeader className="bg-slate-50 sticky top-0">
                 <TableRow>
-                  {safeData.columns?.map((column) => (
-                    <TableHead key={column} className="whitespace-nowrap">
+                  {safeData.columns?.map((column, index) => (
+                    <TableHead key={column || `column-${index}`} className="whitespace-nowrap">
                       {column}
                     </TableHead>
                   ))}
@@ -130,10 +133,10 @@ const TableViewer = ({ table, data }: TableViewerProps) => {
               </TableHeader>
               <TableBody>
                 {paginatedRows.length > 0 ? (
-                  paginatedRows.map((row, index) => (
-                    <TableRow key={index}>
-                      {safeData.columns?.map((column) => (
-                        <TableCell key={column} className="whitespace-nowrap">
+                  paginatedRows.map((row, rowIndex) => (
+                    <TableRow key={rowIndex}>
+                      {safeData.columns?.map((column, colIndex) => (
+                        <TableCell key={`${rowIndex}-${colIndex}`} className="whitespace-nowrap">
                           {row[column]?.toString() || "NULL"}
                         </TableCell>
                       ))}
@@ -141,7 +144,10 @@ const TableViewer = ({ table, data }: TableViewerProps) => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={safeData.columns?.length || 1} className="h-24 text-center">
+                    <TableCell 
+                      colSpan={safeData.columns?.length || 1} 
+                      className="h-24 text-center"
+                    >
                       No results found.
                     </TableCell>
                   </TableRow>
