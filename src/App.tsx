@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import ConnectionsPage from "./pages/ConnectionsPage";
 import Explorer from "./pages/Explorer";
 import QueryPage from "./pages/QueryPage";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/connections" element={<ConnectionsPage />} />
           <Route path="/explorer" element={<Explorer />} />
           <Route path="/query" element={<QueryPage />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
