@@ -89,8 +89,16 @@ export function ConnectionForm({ connection, onSave }: ConnectionFormProps) {
         description: `Successfully connected to ${values.database}`,
       });
 
+      // Fix: Ensure all required fields are explicitly passed
       onSave({
-        ...values,
+        name: values.name,
+        type: values.type,
+        host: values.host,
+        port: values.port,
+        username: values.username,
+        database: values.database,
+        // Optional values
+        password: values.password,
         favorite: connection?.favorite ?? false,
       });
     }, 1500);
