@@ -6,6 +6,7 @@ export interface DatabaseConnection {
   host: string;
   port: number;
   username: string;
+  password?: string;
   database: string;
   lastConnected?: Date;
   status: 'connected' | 'disconnected' | 'error';
