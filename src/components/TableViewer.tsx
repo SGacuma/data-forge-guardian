@@ -33,7 +33,7 @@ import {
 
 interface TableViewerProps {
   table: DatabaseTable;
-  data: QueryResult;
+  data: QueryResult | null | undefined;
 }
 
 const TableViewer = ({ table, data }: TableViewerProps) => {
@@ -41,7 +41,10 @@ const TableViewer = ({ table, data }: TableViewerProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const rowsPerPage = 10;
-  const totalPages = Math.ceil(data.rows.length / rowsPerPage);
+  
+  // Handle potentially undefined or null data
+  const safeData = data || { columns: [], rows: [], rowCount: 0, executionTime: 0 };
+  const totalPages = Math.ceil((safeData.rows?.length || 0) / rowsPerPage);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -56,13 +59,13 @@ const TableViewer = ({ table, data }: TableViewerProps) => {
     }
   };
 
-  const filteredRows = data.rows.filter((row) => {
+  const filteredRows = safeData.rows?.filter((row) => {
     if (!searchValue) return true;
     return Object.values(row).some(
       (value) =>
         value && value.toString().toLowerCase().includes(searchValue.toLowerCase())
     );
-  });
+  }) || [];
 
   const paginatedRows = filteredRows.slice(
     (currentPage - 1) * rowsPerPage,
@@ -118,7 +121,7 @@ const TableViewer = ({ table, data }: TableViewerProps) => {
             <Table className="relative">
               <TableHeader className="bg-slate-50 sticky top-0">
                 <TableRow>
-                  {data.columns.map((column) => (
+                  {safeData.columns?.map((column) => (
                     <TableHead key={column} className="whitespace-nowrap">
                       {column}
                     </TableHead>
@@ -129,7 +132,7 @@ const TableViewer = ({ table, data }: TableViewerProps) => {
                 {paginatedRows.length > 0 ? (
                   paginatedRows.map((row, index) => (
                     <TableRow key={index}>
-                      {data.columns.map((column) => (
+                      {safeData.columns?.map((column) => (
                         <TableCell key={column} className="whitespace-nowrap">
                           {row[column]?.toString() || "NULL"}
                         </TableCell>
@@ -138,7 +141,7 @@ const TableViewer = ({ table, data }: TableViewerProps) => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={data.columns.length} className="h-24 text-center">
+                    <TableCell colSpan={safeData.columns?.length || 1} className="h-24 text-center">
                       No results found.
                     </TableCell>
                   </TableRow>
