@@ -21,7 +21,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  Edit,
+  Trash2
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -30,6 +32,27 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface TableViewerProps {
   table: DatabaseTable;
@@ -37,9 +60,12 @@ interface TableViewerProps {
 }
 
 const TableViewer = ({ table, data }: TableViewerProps) => {
+  const { toast } = useToast();
   const [searchValue, setSearchValue] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<Record<string, any> | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const rowsPerPage = 10;
   
   // Handle potentially undefined or null data
@@ -60,6 +86,28 @@ const TableViewer = ({ table, data }: TableViewerProps) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
+  };
+
+  const handleEdit = (row: Record<string, any>) => {
+    setSelectedRow({...row});
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDelete = (row: Record<string, any>) => {
+    // In a real app, this would send a delete request to the API
+    toast({
+      title: "Record deleted",
+      description: `Successfully deleted record with ID: ${row.id || 'unknown'}`,
+    });
+  };
+
+  const handleEditSave = () => {
+    // In a real app, this would send an update request to the API
+    setIsEditDialogOpen(false);
+    toast({
+      title: "Record updated",
+      description: `Successfully updated record with ID: ${selectedRow?.id || 'unknown'}`,
+    });
   };
 
   const filteredRows = rows.filter((row) => {
@@ -129,6 +177,7 @@ const TableViewer = ({ table, data }: TableViewerProps) => {
                       {column}
                     </TableHead>
                   ))}
+                  <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -140,12 +189,86 @@ const TableViewer = ({ table, data }: TableViewerProps) => {
                           {row[column]?.toString() || "NULL"}
                         </TableCell>
                       ))}
+                      <TableCell className="whitespace-nowrap text-right">
+                        <div className="flex justify-end gap-2">
+                          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                            <DialogTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="icon"
+                                onClick={() => handleEdit(row)}
+                                className="h-8 w-8"
+                              >
+                                <Edit className="h-4 w-4 text-blue-600" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Edit Record</DialogTitle>
+                                <DialogDescription>
+                                  Make changes to the record below.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="grid gap-4 py-4">
+                                {selectedRow && safeData.columns?.map((column) => (
+                                  <div key={column} className="grid grid-cols-4 items-center gap-4">
+                                    <label htmlFor={column} className="text-right font-medium">
+                                      {column}
+                                    </label>
+                                    <Input
+                                      id={column}
+                                      value={selectedRow[column] || ''}
+                                      onChange={(e) => 
+                                        setSelectedRow({...selectedRow, [column]: e.target.value})
+                                      }
+                                      className="col-span-3"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                              <DialogFooter>
+                                <Button onClick={handleEditSave}>Save changes</Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                          
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="icon"
+                                className="h-8 w-8"
+                              >
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will permanently delete this
+                                  record from the database.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => handleDelete(row)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
                     <TableCell 
-                      colSpan={safeData.columns?.length || 1} 
+                      colSpan={(safeData.columns?.length || 1) + 1} 
                       className="h-24 text-center"
                     >
                       No results found.
