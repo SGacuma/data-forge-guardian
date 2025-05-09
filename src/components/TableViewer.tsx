@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DatabaseTable, QueryResult } from "@/types/database";
 import {
   Table,
@@ -66,10 +66,15 @@ const TableViewer = ({ table, data }: TableViewerProps) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedRow, setSelectedRow] = useState<Record<string, any> | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [tableData, setTableData] = useState<QueryResult | null | undefined>(data);
   const rowsPerPage = 10;
   
+  useEffect(() => {
+    setTableData(data);
+  }, [data]);
+  
   // Handle potentially undefined or null data
-  const safeData = data || { columns: [], rows: [], rowCount: 0, executionTime: 0 };
+  const safeData = tableData || { columns: [], rows: [], rowCount: 0, executionTime: 0 };
   
   // Ensure rows is always an array, even if data is undefined or null
   const rows = safeData.rows || [];
@@ -95,6 +100,18 @@ const TableViewer = ({ table, data }: TableViewerProps) => {
 
   const handleDelete = (row: Record<string, any>) => {
     // In a real app, this would send a delete request to the API
+    if (tableData && tableData.rows) {
+      const updatedRows = tableData.rows.filter(r => 
+        r.id !== row.id || JSON.stringify(r) !== JSON.stringify(row)
+      );
+      
+      setTableData({
+        ...tableData,
+        rows: updatedRows,
+        rowCount: updatedRows.length
+      });
+    }
+    
     toast({
       title: "Record deleted",
       description: `Successfully deleted record with ID: ${row.id || 'unknown'}`,
@@ -102,7 +119,25 @@ const TableViewer = ({ table, data }: TableViewerProps) => {
   };
 
   const handleEditSave = () => {
-    // In a real app, this would send an update request to the API
+    if (selectedRow && tableData && tableData.rows) {
+      // Find the index of the row to update
+      const rowIndex = tableData.rows.findIndex(r => 
+        r.id === selectedRow.id || JSON.stringify(r) === JSON.stringify(rows.find(row => row.id === selectedRow.id))
+      );
+      
+      if (rowIndex !== -1) {
+        // Create a new array with the updated row
+        const updatedRows = [...tableData.rows];
+        updatedRows[rowIndex] = selectedRow;
+        
+        // Update the table data state
+        setTableData({
+          ...tableData,
+          rows: updatedRows
+        });
+      }
+    }
+    
     setIsEditDialogOpen(false);
     toast({
       title: "Record updated",
